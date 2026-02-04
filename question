@@ -1,0 +1,119 @@
+Problem Statement
+Editorial (Solutions)
+19. Design Pizza Pricing System - Followup
+
+Implement low level design of pizza pricing system.
+System should support initializing a new pizza, adding toppings to it and calculating final price of pizza.
+
+There are also going to be more followup buisness rules that your system should support.
+Toppings Catalog (With Per-Serving Cost in units)
+Topping	Cost per serving
+cheeseburst	100
+corn	50
+onion	30
+capsicum	50
+pineapple	60
+mushroom	40
+Business Rules for adding toppings that your system must follow:
+cheeseburst
+Cheeseburst is considered unhealthy food and attracts more tax.
+If at least one serving of cheeseburst is present, increase the pizza’s entire tax rate by +30% of its current value
+Example: base tax 10 → 10 + 0.30 × 10 = 13.
+Additional cheeseburst servings do not further change tax.
+Max 1 serving of cheeseburst can be added on pizza size "small" ,
+maximum 2 servings for pizza size "medium"
+cheeseburst cannot be added if mushroom is already present.
+pineapple
+pineapple is allowed only on pizza sizes "medium" and "large".
+mushroom
+mushroom is considered healthy food and it cannot be added if cheeseburst is already present
+If at least one serving of mushroom is present, decrease the pizza’s entire tax rate by +10% of its current value
+Example: base tax 10 → 10 - 0.10 × 10 = 9.
+Additional mushroom servings do not further change tax.
+corn
+For "medium" pizza first serving costs 50; each additional serving costs 40.
+For "large" pizza each serving including the first serving costs 20.
+Your implementation should make it easy to add more new rules later (for example, size-based caps, combos, promos) .
+Use decorator design pattern .
+
+Constructor and Methods
+PizzaPricing(int basePrice, int taxPercentage, String size)
+		
+100 ≤ basePrice ≤ 10000, and basePrice will always be a multiple of 100.
+
+0 ≤ taxPercentage ≤ 1000 1000% tax means tax is 10 times the base price of pizza.
+i.e. if base price is 200 units and tax 1000 and no toppings are there,
+then final price = 200+ tax = 200* 1000% of 200 = 200 + 1000/100 * 200 = 2,200/- units
+Another example: basePrice = 200 units, taxPercentage = 18% then,
+Final price = 200 + 18/100 * 200 =200+36 = 236 units.
+
+size is one of "small", "medium", "large".
+
+All constructor inputs are guaranteed to be valid.
+Methods
+boolean addTopping(String topping, int servingsCount)
+servingsCount is a valid positive integer.
+Returns true if the topping is applied (passes all rules); otherwise false and no state change.
+int getFinalPrice()
+Returns the final price rounded to int using Round Half Up (see rounding).
+Can be called any time.
+Pricing and Tax Model
+Subtotal = basePrice + Σ(topping costs actually applied)
+Taxable Base = Subtotal
+Tax Rate starts at the constructor-supplied taxPercentage. Rules can make it fractional (for example, +30% of current tax).
+Tax Amount = (Tax Rate / 100) × Subtotal
+Final Price (pre-round) = Subtotal + Tax Amount
+Rounding Rule (Round Half Up)
+To convert final price to int: (int)(x + 0.5).
+
+4.6 → 5; 4.51 → 5; 4.49 → 4; 4.5 → 5
+Notes:
+
+Adding a topping that violates a rule returns false and leaves the pizza unchanged.
+Tax uplift from cheeseburst applies once, regardless of additional cheeseburst servings.
+All calculations use decimals internally; rounding to int occurs only in getFinalPrice().
+Examples
+Example A - Small pizza: cheeseburst uplift, size cap, pineapple restriction
+   Create pizza
+PizzaPricing p = new PizzaPricing(200, 10, "small");
+
+  Add toppings
+p.addTopping("cheeseburst", 1);   // true, tax 10 → 13 (one-time uplift)
+p.addTopping("cheeseburst", 1);   // false, exceeds cheeseburst cap for "small" (max 1)
+p.addTopping("pineapple", 1);     // false, pineapple not allowed on "small"
+p.addTopping("onion", 2);         // true (2 × 30)
+
+   Compute final price
+int price = p.getFinalPrice();    // 407
+
+   Calculation: base=200; toppings=100 + 2×30=160; subtotal=360;
+   tax=13% of 360=46.8; final=406.8 → round half up ⇒ 407
+Example B - Medium pizza: mushroom tax decrease, corn tiered pricing, mutual exclusion
+// Create pizza
+PizzaPricing q = new PizzaPricing(350, 8, "medium");
+
+   Add toppings
+q.addTopping("mushroom", 1);      // true; tax 8 → 7.2 (one-time 10% decrease)
+q.addTopping("corn", 3);          // true; medium pricing: 50 + 40 + 40 = 130
+q.addTopping("cheeseburst", 1);   // false; blocked (mushroom already present)
+
+   Compute final price
+int price = q.getFinalPrice();    // 557
+
+     Calculation: base=350; toppings=40 + 130=170; subtotal=520;
+     tax=7.2% of 520=37.44; final=557.44 → round half up ⇒ 557
+Example C - Large pizza: pineapple allowed, corn flat pricing on large
+// Create pizza
+PizzaPricing r = new PizzaPricing(900, 15, "large");
+
+    Add toppings
+r.addTopping("pineapple", 2);     // true (2 × 60)
+r.addTopping("corn", 4);          // true; large pricing: 4 × 20 = 80
+r.addTopping("onion", 1);         // true (1 × 30)
+
+    Compute final price
+int price = r.getFinalPrice();    // 1300
+
+    Calculation: base=900; toppings=120 + 80 + 30=230; subtotal=1130;
+   tax=15% of 1130=169.5; final=1299.5 → round half up ⇒ 1300
+   
